@@ -1,11 +1,10 @@
 # Import the dependencies.
 import datetime as dt
 from dateutil.relativedelta import relativedelta
-
+import numpy as np
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine
-
+from sqlalchemy import create_engine, func
 from flask import Flask, jsonify
 
 #################################################
@@ -21,6 +20,9 @@ Base.prepare(autoload_with=engine)
 # Save references to each table
 Measurement=Base.classes.measurement
 Station = Base.classes.station
+
+# Set labels for temperature data
+temp_names=['TMin','TAvg','TMax']
 
 #Function to convert tuples to a list pf dictionaries
 def convert_to_list(res, names):
@@ -58,6 +60,7 @@ def welcome():
 
 @app.route('/api/v1.0/precipitation')
 def gerprecipitation():
+
     # Create our session (link) from Python to the DB
     session = Session(engine)
     # Design a query to retrieve the last 12 months of precipitation data and plot the results. 
@@ -84,28 +87,34 @@ def gerprecipitation():
 
 @app.route('/api/v1.0/stations')
 def getstations():
-    sel = [Measurement.station, Station.name]
+    """List of all the stations in the data
+    Return: json list of of station Ids.
+    """
     # Create our session (link) from Python to the DB
     session = Session(engine)
-    stations = session.query(*sel).filter(Station.station == Measurement.station).distinct()
+    stations = session.query(Measurement.station).distinct().all()
     # Close the DB session
     session.close()
-    #Prepare the labels for the response
-    names=['station','name']
-    #Call the function to return a list of dictionaries, convert it to json and return formatted list.
-    return jsonify(convert_to_list(stations,names))
+    #Create a list from the response
+    all_stations = list(np.ravel(stations))
+    # convert the list to json and return formatted list.
+    return jsonify(all_stations)
 
 
 @app.route('/api/v1.0/tobs')
 def getactivestation_data():
+    """List the temperature observations for the last 12 month period for the most active station 
+    Return: json list of temperatures observations for last 12 month period for the most active station.
+    """
     # Create our session (link) from Python to the DB
     session = Session(engine)
-    result = engine.execute("select station, max(date) as to_date from measurement group by station order by count(date) desc limit 1;").fetchall()
+    result = session.execute("select station, max(date) as to_date from measurement group by station order by count(date) desc limit 1;").fetchall()
     active_station = result[0][0]
     active_station_date = result[0][1]
     last_active_date = dt.datetime.strptime(active_station_date,'%Y-%m-%d')
     year_from_last_active_dt= (last_active_date - dt.timedelta(days=365)).strftime("%Y-%m-%d")
-    result_temps = engine.execute(f"select date, tobs from measurement where station ='{active_station}' and date >= '{year_from_last_active_dt}' and date <= '{active_station_date}';").fetchall()
+    result_temps = session.query(Measurement.date, Measurement.tobs).filter(Measurement.station == active_station).\
+                                filter(Measurement.date >= year_from_last_active_dt).filter(Measurement.date <= active_station_date).all()
     # Close the DB session
     session.close()
     #Prepare the labels for the response
@@ -116,34 +125,49 @@ def getactivestation_data():
 
 @app.route('/api/v1.0/<start_date>')
 def get_temp_start_date(start_date):
+    """List the average, minimum, amd maximum temperatures from a start date
+    Keyword arguments:
+    start_date -- Start date for temperature observations
+    Return: json list of average, minimum, and maximum temperatures for observations that are on or after the start date.
+    """
     #Format the input date 
     start_date_clean= start_date.replace("%20","-")
 
     # Create our session (link) from Python to the DB
     session = Session(engine)
-    result = engine.execute(f"select min(tobs) AS TMIN, avg(tobs) AS TAVG, max(tobs) AS TMAX from measurement where date >= '{start_date_clean}';").fetchall()
+    result = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
+                            filter(Measurement.date >= start_date_clean).all()
     # Close the DB session
     session.close()
-    #Prepare the labels for the response
-    names=['Minimum','Average','Maximum']
+    
     #Call the function to return a list of dictionaries, convert it to json and return formatted list.
-    return jsonify(convert_to_list(result,names))
+    return jsonify(convert_to_list(result,temp_names))
 
 
 @app.route('/api/v1.0/<start_date>/<end_date>')
 def get_temp_start_end_date(start_date,end_date):
+    """List the average, minimum, amd maximum temperatures for a time period
+    Keyword arguments:
+    start_date -- Start date for temperature observations
+    end_date -- End date for temperature observations
+    Return: json list of average, minimum, and maximum temperatures for the period
+    """
     #Format the input date 
     start_date_clean= start_date.replace("%20","-")
     end_date_clean= end_date.replace("%20","-")
     # Create our session (link) from Python to the DB
     session = Session(engine)
-    result = engine.execute(f"select min(tobs) AS TMIN, avg(tobs) AS TAVG, max(tobs) AS TMAX from measurement where date >= '{start_date_clean}' and date <= '{end_date_clean}';").fetchall()
+    
+    result = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
+                            filter(Measurement.date >= start_date_clean).filter(Measurement.date <= end_date_clean).all()
+    
+    # Alternate way to query the database session - execute(f"select min(tobs) AS TMIN, avg(tobs) AS TAVG, max(tobs) AS TMAX from measurement where date >= '{start_date_clean}' and date <= '{end_date_clean}';").fetchall()
+    
     # Close the DB session
     session.close()
-    #Prepare the labels for the response
-    names=['Minimum','Average','Maximum']
+    
     #Call the function to return a list of dictionaries, convert it to json and return formatted list.
-    return jsonify(convert_to_list(result,names))
+    return jsonify(convert_to_list(result,temp_names))
 
 
 if __name__ == '__main__':
