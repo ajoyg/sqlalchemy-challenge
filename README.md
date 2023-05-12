@@ -15,7 +15,7 @@ This section creates a Flask API based on the queries built in Part 1.
 The file app.py in the SurfsUp has the following api routes:
 * / (Homepage) - Returns a list of all available apis on the home page
 * /api/v1.0/precipitation - Returns the last 12 months of precipitation data in a json format (date:precipitation)
-* /api/v1.0/stations - Returns a list of stations in a json format (station id)
-* /api/v1.0/tobs - Returns a list of temperature observations for a 12 month period for the most active station (date, temperature)
-* /api/v1.0/<start_date> - Returns a list of minimum, average, and maximum temperatures for all dates greater than or equal to the start date.
-*  /api/v1.0/<start_date>/<end_date> - Returns a list of minimum, average, and maximum temperatures for all dates from the start date to the end date, inclusive.
+* /api/v1.0/stations - Returns a json list of stations in a json format (station id)
+* /api/v1.0/tobs - Returns a json list of temperature observations for a 12 month period for the most active station (date, temperature)
+* /api/v1.0/<start_date> - Returns a json list of minimum, average, and maximum temperatures for all dates greater than or equal to the start date.
+*  /api/v1.0/<start_date>/<end_date> - Returns a json list of minimum, average, and maximum temperatures for all dates from the start date to the end date, inclusive.
