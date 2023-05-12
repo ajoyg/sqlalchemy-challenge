@@ -28,7 +28,6 @@ temp_names=['TMin','TAvg','TMax']
 #Function to convert tuples to a list pf dictionaries
 def convert_to_list(res, names):
     temp_list=[]
-    #temp_dict={}
     for row in res:
         temp_dict={}
         i=0
