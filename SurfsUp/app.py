@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
 from flask import Flask, jsonify
 
+
 #################################################
 # Database Setup
 #################################################
@@ -53,14 +54,13 @@ def welcome():
         f'<a href="http://127.0.0.1:5000/api/v1.0/precipitation"><b>/api/v1.0/precipitation</b></a><br/>'
         f'<a href="http://127.0.0.1:5000/api/v1.0/stations"><b>/api/v1.0/stations</b></a><br/>'
         f'<a href="http://127.0.0.1:5000/api/v1.0/tobs"><b>/api/v1.0/tobs</b></a><br/>'
-        f'<a href="http://127.0.0.1:5000/api/v1.0/2017-08-01"><b>/api/v1.0/&lt;start_date&gt;</b><br/>'
+        f'<a href="http://127.0.0.1:5000/api/v1.0/2017-08-01"><b>/api/v1.0/&lt;start_date(YYYY-MM-DD)&gt;</b><br/>'
         f'<a href="http://127.0.0.1:5000/api/v1.0/2016-08-01/2017-01-01"><b>/api/v1.0/&lt;start_date&gt;/&lt;end_date&gt;</b><br/>'
     )
 
 
 @app.route('/api/v1.0/precipitation')
 def gerprecipitation():
-
     # Create our session (link) from Python to the DB
     session = Session(engine)
     # Design a query to retrieve the last 12 months of precipitation data and plot the results. 
